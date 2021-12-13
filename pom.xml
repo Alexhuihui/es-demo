@@ -15,7 +15,7 @@
     <description>es-demo</description>
     <properties>
         <java.version>1.8</java.version>
-        <es.version>7.14.0</es.version>
+        <es.version>7.15.2</es.version>
     </properties>
     <dependencies>
         <dependency>

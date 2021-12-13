@@ -7,6 +7,7 @@ import cn.hutool.core.lang.Assert;
 import com.alibaba.fastjson.JSONObject;
 import lombok.extern.slf4j.Slf4j;
 import org.elasticsearch.ElasticsearchException;
+import org.elasticsearch.action.ActionListener;
 import org.elasticsearch.action.DocWriteResponse;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
@@ -16,6 +17,7 @@ import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.action.update.UpdateResponse;
+import org.elasticsearch.client.Cancellable;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.common.text.Text;
@@ -65,8 +67,8 @@ public class EsServiceImpl implements EsService {
         QueryBuilder matchQueryBuilder = QueryBuilders.matchQuery("content", keyword)
                 .fuzziness(Fuzziness.AUTO)
                 .prefixLength(3)
-                .maxExpansions(10)
-                .analyzer("ik_smart");
+                .maxExpansions(10);
+//                .analyzer("ik_smart");
         sourceBuilder.query(matchQueryBuilder);
 
         // 设置分页
@@ -129,16 +131,25 @@ public class EsServiceImpl implements EsService {
         String jsonString = JSONObject.toJSONString(fastOrderDto);
         log.info(jsonString);
         request.source(jsonString, XContentType.JSON);
-        IndexResponse indexResponse = null;
-        try {
-            indexResponse = client.index(request, RequestOptions.DEFAULT);
-        } catch (IOException e) {
-            log.error("新增文档失败", e);
-        }
-        assert indexResponse != null;
-        log.info(indexResponse.toString());
-        Assert.isTrue(DocWriteResponse.Result.CREATED.equals(indexResponse.getResult()));
-        return indexResponse.getId();
+
+        Cancellable cancellable = client.indexAsync(request, RequestOptions.DEFAULT, listener());
+
+        return cancellable.toString();
+    }
+
+    public ActionListener<IndexResponse> listener() {
+        return new ActionListener<IndexResponse>() {
+            @Override
+            public void onResponse(IndexResponse indexResponse) {
+                log.info("listener:{}", indexResponse.toString());
+                Assert.isTrue(DocWriteResponse.Result.CREATED.equals(indexResponse.getResult()));
+            }
+
+            @Override
+            public void onFailure(Exception e) {
+                log.error("异步请求失败");
+            }
+        };
     }
 
     @Override

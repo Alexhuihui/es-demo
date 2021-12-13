@@ -19,22 +19,25 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class EsConfig {
 
-    @Value("${elasticsearch.host:localhost}")
+    @Value("${elasticsearch.host:wechat-robot.es.us-central1.gcp.cloud.es.io}")
     public String host;
 
     /**
      * 之前使用transport的接口的时候是9300端口，现在使用HighLevelClient则是9200端口
      */
-    @Value("${elasticsearch.port:9200}")
+    @Value("${elasticsearch.port:9243}")
     public int port;
 
-    public static final String SCHEME = "http";
+    public static final String SCHEME = "https";
 
-    @Value("${elasticsearch.username:admin}")
+    @Value("${elasticsearch.username:elastic}")
     public String username;
 
-    @Value("${elasticsearch.authenticationPassword:123}")
+    @Value("${elasticsearch.authenticationPassword:AKXqgzZCkMvnEzjcjapi6HGT}")
     public String authenticationPassword;
+
+    @Value("${elasticsearch.cloudId}")
+    public String cloudId;
 
     @Bean(name = "remoteHighLevelClient")
     public RestHighLevelClient restHighLevelClient() {
@@ -42,8 +45,8 @@ public class EsConfig {
         credentialsProvider.setCredentials(AuthScope.ANY, new UsernamePasswordCredentials(username,
                 authenticationPassword));
         RestClientBuilder builder = RestClient.builder(new HttpHost(host, port, SCHEME));
-//                setHttpClientConfigCallback(httpClientBuilder -> httpClientBuilder
-//                        .setDefaultCredentialsProvider(credentialsProvider));
+        builder.setHttpClientConfigCallback(httpClientBuilder -> httpClientBuilder
+                .setDefaultCredentialsProvider(credentialsProvider));
         return new RestHighLevelClient(builder);
     }
 }
